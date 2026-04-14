@@ -1,0 +1,297 @@
+############################################################################
+# DATA IMPORT ##############################################################
+############################################################################
+
+# Source custom scripts
+source("install.R")       # Import R library
+source("ddop_data.R")     # Import and Cleaning Data
+source("ddop_utility.R")  # Utility functions for Data Analysis
+source("ddop_plot.R")     # Plotting functions for Data Analysis
+source("cv.R")            # Cross Validation
+source("fwfs.R")          # Forward Feature Selection
+source("bwfs.R")          # Backward Feature Selection
+source("genetic.R")       # Feature Selection with Genetic Algorithm
+
+############################################################################
+# RUNNING MAIN FUNCTION ####################################################
+############################################################################
+
+rpm <- function(){
+  
+  dataset <- read_sav("data/dataset.sav")
+  
+  ############################################################################
+  # FOR UNBALANCED DATASET ###################################################
+  ############################################################################
+  
+  #cv
+  results_cv <- cv(dataset)
+  print_summary_results(results_cv$results)
+  calibration_curves_docx(results_cv$all_predictions, 
+                          "calibration_curves_cv_no_balance.docx", 
+                          "Calibration Curves for Cross Validation on unbalanced dataset")
+  f1_brier_docx(results_cv$all_predictions,
+                "f1_brier_cv_no_balance.docx",
+                "F1 and Brier for Cross Validation on unbalanced dataset")
+  dca_docx(results_cv$all_predictions,
+           "dca_cv_no_balance.docx",
+           "Decision Curve Analysis for Cross Validation on unbalanced dataset")
+  risk_table_docx(results_cv$thresholds_results, 
+                  "risk_analysis_cv_no_balance.docx", 
+                  "with Cross Validation on unbalanced dataset")
+  
+  # with forward selection
+  results_fwfs <- random_forward_selection(dataset)
+  print_summary_results(results_fwfs$results)
+  calibration_curves_docx(results_fwfs$all_predictions,
+                          "calibration_curves_fwfs_no_balance.docx", 
+                          "Calibration Curves for Forward Selection on unbalanced dataset")
+  f1_brier_docx(results_fwfs$all_predictions,
+                "f1_brier_fwfs_no_balance.docx",
+                "F1 and Brier for Forward Selection on unbalanced dataset")
+  dca_docx(results_fwfs$all_predictions,
+           "dca_fwfs_no_balance.docx",
+           "Decision Curve Analysis for Forward Selection on unbalanced dataset")
+  selected_features_table_docx(dataset, results_fwfs$best_features, 
+                               "selected_features_fwfs_no_balance.docx",
+                               "Selected Features by Forward FS on unbalanced dataset")
+  risk_table_docx(results_fwfs$thresholds_results, 
+                  "risk_analysis_fwfs_no_balance.docx", 
+                  "with Forward Selection on unbalanced dataset")
+  
+  # with backward selection
+  results_bwfs <- random_backward_selection(dataset)
+  print_summary_results(results_bwfs$results)
+  calibration_curves_docx(results_bwfs$all_predictions, 
+                          "calibration_curves_bwfs_no_balance.docx", 
+                          "Calibration Curves for Backward Selection on unbalanced dataset")
+  f1_brier_docx(results_bwfs$all_predictions,
+                "f1_brier_bwfs_no_balance.docx",
+                "F1 and Brier for Backward Selection on unbalanced dataset")
+  dca_docx(results_bwfs$all_predictions,
+           "dca_bwfs_no_balance.docx",
+           "Decision Curve Analysis for Backward Selection on unbalanced dataset")
+  selected_features_table_docx(dataset, results_bwfs$best_features,
+                               "selected_features_bwfs_no_balance.docx",
+                               "Selected Features by Backword FS on unbalanced dataset")
+  risk_table_docx(results_bwfs$thresholds_results, 
+                  "risk_analysis_bwfs_no_balance.docx", 
+                  "with Backward Selection on unbalanced dataset")
+  
+  # with genetic selection
+  results_ga <- genetic_feature_selection(dataset)
+  print_summary_results(results_ga$results)
+  calibration_curves_docx(results_ga$all_predictions, 
+                          "calibration_curves_ga_no_balance.docx",
+                          "Calibration Curves for Genetic Selection on unbalanced dataset")
+  f1_brier_docx(results_ga$all_predictions,
+                "f1_brier_ga_no_balance.docx",
+                "F1 and Brier for Genetic Selection on unbalanced dataset")
+  dca_docx(results_ga$all_predictions,
+           "dca_ga_no_balance.docx",
+           "Decision Curve Analysis for Genetic Selection on unbalanced dataset")
+  selected_features_table_docx(dataset, results_ga$best_features, 
+                               "selected_features_ga_no_balance.docx",
+                               "Selected Features by Genetic Selection on unbalanced dataset")
+  risk_table_docx(results_ga$thresholds_results, 
+                  "risk_analysis_ga_no_balance.docx", 
+                  "with Genetic Selection on unbalanced dataset")
+  
+  roc_curves_docx(list(results_cv$all_predictions, results_fwfs$all_predictions, results_bwfs$all_predictions, results_ga$all_predictions), "roc_curves_no_balance.docx", "ROC Curves for unbalanced dataset",)
+  pr_curves_docx(list(results_cv$all_predictions, results_fwfs$all_predictions, results_bwfs$all_predictions, results_ga$all_predictions), "pr_curves_no_balance.docx", "Precision-Recall Curves for unbalanced dataset")
+ 
+  ############################################################################
+  # FOR UNDERSAMPLING DATASET ################################################
+  ############################################################################
+  
+  # cv
+  results_cv_under <- double_cv(dataset, balance = "under")
+  print_summary_results(results_cv_under$results)
+  calibration_curves_docx(results_cv_under$all_predictions, 
+                          "calibration_curves_cv_balance_under.docx", 
+                          "Calibration Curves for Cross Validation on undersampling balanced dataset")
+  f1_brier_docx(results_cv_under$all_predictions,
+                "f1_brier_cv_balance_under.docx",
+                "F1 and Brier for Cross Validation on undersampling balanced dataset")
+  dca_docx(results_cv_under$all_predictions,
+           "dca_cv_balance_under.docx",
+           "Decision Curve Analysis for Cross Validation on undersampling balanced dataset")
+  risk_table_docx(results_cv_under$thresholds_results, 
+                  "risk_analysis_cv_balance_under.docx", 
+                  "with Cross Validation on undersampling balanced dataset")
+  
+  # with forward selection
+  results_fwfs_bl_under <- random_forward_selection_bl(dataset, balance = "under")
+  print_summary_results(results_fwfs_bl_under$results)
+  calibration_curves_docx(results_fwfs_bl_under$all_predictions, 
+                          "calibration_curves_fwfs_balance_under.docx", 
+                          "Calibration Curves for Forward Selection on undersampling balanced dataset")
+  f1_brier_docx(results_fwfs_bl_under$all_predictions,
+                "f1_brier_fwfs_balance_under.docx",
+                "F1 and Brier for Forward Selection on undersampling balanced dataset")
+  dca_docx(results_fwfs_bl_under$all_predictions,
+           "dca_fwfs_balance_under.docx",
+           "Decision Curve Analysis for Forward Selection on undersampling balanced dataset")
+  selected_features_table_docx(dataset, results_fwfs_bl_under$best_features, 
+                               "selected_features_fwfs_balance_under.docx",
+                               "Selected Features by Forward FS on undersampling balanced dataset")
+  risk_table_docx(results_fwfs_bl_under$thresholds_results, 
+                  "risk_analysis_fwfs_balance_under.docx",
+                  "with Forward Selection on undersampling balanced dataset")
+  
+  # with backward selection
+  results_bwfs_bl_under<- random_backward_selection_bl(dataset, balance = "under")
+  print_summary_results(results_bwfs_bl_under$results)
+  calibration_curves_docx(results_bwfs_bl_under$all_predictions, 
+                          "calibration_curves_bwfs_balance_under.docx", 
+                          "Calibration Curves for Backward Selection on undersampling balanced dataset")
+  f1_brier_docx(results_bwfs_bl_under$all_predictions,
+                "f1_brier_bwfs_balance_under.docx",
+                "F1 and Brier for Backward Selection on undersampling balanced dataset")
+  dca_docx(results_bwfs_bl_under$all_predictions,
+           "dca_bwfs_balance_under.docx",
+           "Decision Curve Analysis for Backward Selection on undersampling balanced dataset")
+  selected_features_table_docx(dataset, results_bwfs_bl_under$best_features, 
+                               "selected_features_bwfs_balance_under.docx",
+                               "Selected Features by Backward FS on undersampling balanced dataset")
+  risk_table_docx(results_bwfs_bl_under$thresholds_results, 
+                  "risk_analysis_bwfs_balance_under.docx", 
+                  "with Backward Selection on undersampling balanced dataset")
+  
+  # with genetic selection
+  results_ga_bl_under <- genetic_feature_selection_bl(dataset, balance = "under") 
+  print_summary_results(results_ga_bl_under$results)
+  calibration_curves_docx(results_ga_bl_under$all_predictions, 
+                          "calibration_curves_ga_balance_under.docx", 
+                          "Calibration Curves for Genetic Selection on undersampling balanced dataset")
+  f1_brier_docx(results_ga_bl_under$all_predictions,
+                "f1_brier_ga_balance_under.docx",
+                "F1 and Brier for Genetic Selection on undersampling balanced dataset")
+  dca_docx(results_ga_bl_under$all_predictions,
+           "dca_ga_balance_under.docx",
+           "Decision Curve Analysis for Genetic Selection on undersampling balanced dataset")
+  selected_features_table_docx(dataset, results_ga_bl_under$best_features, 
+                               "selected_features_ga_balance_under.docx",
+                               "Selected Features by Genetic Selection on undersampling balanced dataset")
+  risk_table_docx(results_ga_bl_under$thresholds_results, 
+                  "risk_analysis_ga_balance_under.docx", 
+                  "with Genetic Selection on undersampling balanced dataset")
+  
+  roc_curves_docx(list(results_cv_under$all_predictions, results_fwfs_bl_under$all_predictions, results_bwfs_bl_under$all_predictions, results_ga_bl_under$all_predictions), "roc_curves_no_balance.docx", "ROC Curves for undersampling balanced dataset")
+  pr_curves_docx(list(results_cv_under$all_predictions, results_fwfs_bl_under$all_predictions, results_bwfs_bl_under$all_predictions, results_ga_bl_under$all_predictions), "pr_curves_balance_under.docx", "Precision-Recall Curves for undersampling balanced dataset")
+  
+  ############################################################################
+  # FOR OVERSAMPLING DATASET #################################################
+  ############################################################################
+  
+  # cv
+  results_cv_over <- double_cv(dataset, balance = "over")
+  print_summary_results(results_cv_over$results)
+  calibration_curves_docx(results_cv_over$all_predictions, 
+                          "calibration_curves_cv_balance_over.docx",  
+                          "Calibration Curves for Cross Validation on oversampling balanced dataset")
+  f1_brier_docx(results_cv_over$all_predictions,
+                "f1_brier_cv_balance_over.docx",
+                "F1 and Brier for Cross Validation on oversampling balanced dataset")
+  dca_docx(results_cv_over$all_predictions,
+           "dca_cv_balance_over.docx",
+           "Decision Curve Analysis for Cross Validation on oversampling balanced dataset")
+  risk_table_docx(results_cv_over$thresholds_results, 
+                  "risk_analysis_cv_balance_over.docx", 
+                  "with Cross Validation on oversampling balanced dataset")
+  
+  # with forward selection
+  results_fwfs_bl_over <- random_forward_selection_bl(dataset, balance = "over")
+  print_summary_results(results_fwfs_bl_over$results)
+  calibration_curves_docx(results_fwfs_bl_over$all_predictions, 
+                          "calibration_curves_fwfs_balance_over.docx", 
+                          "Calibration Curves for Forward Selection on oversampling balanced dataset")
+  selected_features_table_docx(dataset, results_fwfs_bl_over$best_features,  
+                               "selected_features_fwfs_balance_over.docx",
+                               "Selected Features by Forward FS on oversampling balanced dataset")
+  risk_table_docx(results_fwfs_bl_over$thresholds_results, 
+                  "risk_analysis_fwfs_balance_over.docx", 
+                  "with Forward Selection on oversampling balanced dataset")
+  f1_brier_docx(results_fwfs_bl_over$all_predictions,
+                "f1_brier_fwfs_balance_over.docx",
+                "F1 and Brier for Forward Selection on oversampling balanced dataset")
+  dca_docx(results_fwfs_bl_over$all_predictions,
+           "dca_fwfs_balance_over.docx",
+           "Decision Curve Analysis for Forward Selection on oversampling balanced dataset")
+  
+  # with backward selection
+  results_bwfs_bl_over <- random_backward_selection_bl(dataset, balance = "over")
+  print_summary_results(results_bwfs_bl_over$results)
+  calibration_curves_docx(results_bwfs_bl_over$all_predictions, 
+                          "calibration_curves_bwfs_balance_over.docx", 
+                          "Calibration Curves for Backward Selection on oversampling balanced dataset")
+  selected_features_table_docx(dataset, results_bwfs_bl_over$best_features,  
+                               "selected_features_bwfs_balance_over.docx",
+                               "Selected Features by Backward FS on oversampling balanced dataset")
+  risk_table_docx(results_bwfs_bl_over$thresholds_results, 
+                  "risk_analysis_bwfs_balance_over.docx", 
+                  "with Bacward Selection on oversampling balanced dataset")
+  f1_brier_docx(results_bwfs_bl_over$all_predictions,
+                "f1_brier_bwfs_balance_over.docx",
+                "F1 and Brier for Backward Selection on oversampling balanced dataset")
+  dca_docx(results_bwfs_bl_over$all_predictions,
+           "dca_bwfs_balance_over.docx",
+           "Decision Curve Analysis for Backward Selection on oversampling balanced dataset")
+  
+  # with genetic selection
+  results_ga_bl_over <- genetic_feature_selection_bl(dataset, balance = "over") 
+  print_summary_results(results_ga_bl_over$results)
+  calibration_curves_docx(results_ga_bl_over$all_predictions, 
+                          "calibration_curves_ga_balance_over.docx",  
+                          "Calibration Curves for Genetic Selection on oversampling balanced dataset")
+  selected_features_table_docx(dataset, results_ga_bl_over$best_features,  
+                               "selected_features_ga_balance_over.docx",
+                               "Selected Features by Genetic Selection on oversampling balanced dataset")
+  risk_table_docx(results_ga_bl_over$thresholds_results, 
+                  "risk_analysis_ga_balance_over.docx", 
+                  "with Genetic Selection on oversampling balanced dataset")
+  f1_brier_docx(results_ga_bl_over$all_predictions,
+                "f1_brier_ga_balance_over.docx",
+                "F1 and Brier for Genetic Selection on oversampling balanced dataset")
+  dca_docx(results_ga_bl_over$all_predictions,
+           "dca_ga_balance_over.docx",
+           "Decision Curve Analysis for Genetic Selection on oversampling balanced dataset")
+  
+  roc_curves_docx(list(results_cv_over$all_predictions, results_fwfs_bl_over$all_predictions, results_bwfs_bl_over$all_predictions, results_ga_bl_over$all_predictions), "roc_curves_balance_oversampling.docx", "ROC Curves for oversampling balanced dataset")
+  pr_curves_docx(list(results_cv_over$all_predictions, results_fwfs_bl_over$all_predictions, results_bwfs_bl_over$all_predictions, results_ga_bl_over$all_predictions), "pr_curves_balance_over.docx", "Precision-Recall Curves for oversampling balanced dataset")
+  
+  ############################################################################
+  # REGRESSION ###############################################################
+  ############################################################################
+  
+  dataset <- read_sav("data/score_dataset.sav")
+  
+  #cv
+  results_cv_score <- score_cross_validation(dataset)
+  print_summary_results(results_cv_score$results)
+  print_score_summary_results(results_cv_score$predictions)
+  all_predictions<- results_cv_score$all_predictions %>%
+    mutate(
+      TrueLabel = ifelse(TrueLabel >= 4, "yes", "no"),
+      TrueLabel = factor(TrueLabel, levels = c("no", "yes"))
+    )
+  regression_roc_curve_docx(all_predictions,
+                  "roc_curves_cv_regression.docx", 
+                  "ROC Curves for Linear Regression with Cross Validation")
+  
+  #with genetic selection
+  results_ga_score <- score_genetic_feature_selection(dataset)
+  print_summary_results(results_ga_score$results)
+  print_score_summary_results(results_ga_score$predictions)
+  all_predictions<- results_ga_score$all_predictions %>%
+    mutate(
+      TrueLabel = ifelse(TrueLabel >= 4, "yes", "no"),
+      TrueLabel = factor(TrueLabel, levels = c("no", "yes"))
+    )
+  regression_roc_curve_docx(all_predictions,
+                  "roc_curves_ga_regression.docx", 
+                  "ROC Curves for Linear Regression with Genetic Algorithm")
+  selected_features_table_docx(dataset, results_ga_score$best_features,  
+                               "selected_features_ga_score.docx",
+                               "Selected Features by Genetic Selection in Logistic Regression")
+}
