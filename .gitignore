@@ -1,0 +1,7 @@
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+.quarto/
+.ipynb_checkpoints/
+__pycache__/

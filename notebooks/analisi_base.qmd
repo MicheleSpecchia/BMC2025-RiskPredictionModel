@@ -1,0 +1,195 @@
+---
+title: "BMC2025 - Analisi operativa"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+execute:
+  echo: true
+  warning: true
+  message: true
+---
+
+# Obiettivo
+
+Documento Quarto allineato a `pipeline.R` per pre-analisi e metriche iniziali.
+
+## Setup
+
+```{r}
+options(stringsAsFactors = FALSE)
+set.seed(123)
+
+needed <- c(
+  "haven", "dplyr", "tibble", "tidyr", "ggplot2",
+  "caret", "rpart", "randomForest", "e1071"
+)
+missing <- needed[!vapply(needed, requireNamespace, logical(1), quietly = TRUE)]
+if (length(missing) > 0) install.packages(missing)
+invisible(lapply(needed, library, character.only = TRUE))
+```
+
+## Root progetto
+
+```{r}
+find_project_root <- function(start = getwd()) {
+  current <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    has_pipeline <- file.exists(file.path(current, "pipeline.R"))
+    has_data <- dir.exists(file.path(current, "data"))
+    if (has_pipeline && has_data) return(current)
+
+    parent <- dirname(current)
+    if (identical(parent, current)) {
+      stop("Project root non trovato (atteso pipeline.R + data/).")
+    }
+    current <- parent
+  }
+}
+
+project_root <- find_project_root()
+setwd(project_root)
+cat("Working directory:", getwd(), "\n")
+```
+
+## Source script
+
+```{r}
+scripts <- c(
+  "ddop_data.R", "ddop_utility.R", "cv.R",
+  "fwfs.R", "bwfs.R", "genetic.R", "ddop_plot.R"
+)
+missing_scripts <- scripts[!file.exists(scripts)]
+if (length(missing_scripts) > 0) {
+  stop("Script mancanti: ", paste(missing_scripts, collapse = ", "))
+}
+invisible(lapply(scripts, source))
+```
+
+## Caricamento dataset classificazione
+
+```{r}
+normalize_target <- function(x) {
+  chr <- tolower(trimws(as.character(x)))
+
+  if (all(chr %in% c("no", "yes", NA_character_))) {
+    return(factor(chr, levels = c("no", "yes")))
+  }
+
+  if (all(chr %in% c("0", "1", NA_character_))) {
+    mapped <- ifelse(chr == "1", "yes", ifelse(chr == "0", "no", NA_character_))
+    return(factor(mapped, levels = c("no", "yes")))
+  }
+
+  levels_found <- sort(unique(na.omit(chr)))
+  if (length(levels_found) == 2) {
+    mapped <- ifelse(
+      chr == levels_found[1], "no",
+      ifelse(chr == levels_found[2], "yes", NA_character_)
+    )
+    warning(
+      "`euro_d` rimappata automaticamente a no/yes da: ",
+      paste(levels_found, collapse = ", ")
+    )
+    return(factor(mapped, levels = c("no", "yes")))
+  }
+
+  stop(
+    "`euro_d` non in formato binario. Valori trovati: ",
+    paste(head(levels_found, 10), collapse = ", ")
+  )
+}
+
+dataset_path <- file.path("data", "dataset.sav")
+stopifnot(file.exists(dataset_path))
+dataset <- haven::read_sav(dataset_path)
+
+if (!"euro_d" %in% names(dataset)) {
+  stop("La variabile target `euro_d` non e presente nel dataset.")
+}
+dataset$euro_d <- normalize_target(dataset$euro_d)
+
+cat("Rows:", nrow(dataset), " Cols:", ncol(dataset), "\n")
+dataset %>% count(euro_d) %>% mutate(perc = round(n / sum(n) * 100, 2))
+```
+
+## Pre-analisi
+
+```{r}
+na_profile <- var_na_perc(dataset)
+na_profile
+```
+
+```{r}
+top_missing <- sort(colMeans(is.na(dataset)) * 100, decreasing = TRUE)
+head(top_missing, 20)
+```
+
+```{r}
+domain_mapping <- get_domain_map(dataset)
+var_types <- get_var_type(dataset, domain_mapping)
+
+tibble::tibble(
+  gruppo = c("continue", "ord", "not_ord", "euro"),
+  n = c(
+    length(var_types$var_continue),
+    length(var_types$var_ord),
+    length(var_types$var_not_ord),
+    length(var_types$var_euro)
+  )
+)
+```
+
+## CV rapida
+
+```{r}
+results_cv_quick <- cv(dataset, model_types = c("glm"), seed = 123, k_folds = 5)
+
+cv_metrics <- dplyr::bind_rows(results_cv_quick$results)
+cv_summary <- cv_metrics %>%
+  group_by(Model, Indicator) %>%
+  summarise(
+    Mean = mean(Value, na.rm = TRUE),
+    SD = sd(Value, na.rm = TRUE),
+    Min = min(Value, na.rm = TRUE),
+    Max = max(Value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(Model, Indicator)
+
+cv_summary
+```
+
+## Soglia ottimale e curva accuracy
+
+```{r}
+best_thresholds <- results_cv_quick$thresholds_results %>%
+  group_by(Model) %>%
+  slice_max(order_by = Accuracy, n = 1, with_ties = FALSE) %>%
+  ungroup() %>%
+  select(
+    Model, Threshold, Accuracy, Sensitivity, Specificity,
+    PPV, NPV, Population_below_threshold
+  )
+
+best_thresholds
+```
+
+```{r}
+ggplot(results_cv_quick$thresholds_results, aes(x = Threshold, y = Accuracy, color = Model)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 1.8) +
+  labs(title = "Accuracy vs Threshold", x = "Threshold (%)", y = "Accuracy") +
+  theme_minimal(base_size = 12)
+```
+
+## Esecuzione estesa (opzionale)
+
+```{r eval=FALSE}
+# results_cv <- cv(dataset)
+# results_cv_under <- double_cv(dataset, balance = "under")
+# results_cv_over <- double_cv(dataset, balance = "over")
+# results_fwfs <- random_forward_selection(dataset)
+# results_bwfs <- random_backward_selection(dataset)
+# results_ga <- genetic_feature_selection(dataset)
+```
