@@ -14,12 +14,15 @@
 ## Model Performance
 
 ![ROC curve](results/roc.jpg)
+
 *ROC curve comparing model discrimination performance (GA-selected feature setting).*
 
 ![Calibration curve](results/calibration.png)
+
 *Calibration curve showing agreement between predicted and observed outcomes.*
 
 ![Precision-Recall curve](results/pr.png)
+
 *Precision-Recall curve highlighting performance under class imbalance.*
 
 ## Methodology
@@ -70,6 +73,6 @@ Online options already used in this project context:
 
 ## Reference
 
-Belvederi Murri M, Sciavicco G, Specchia M, et al. *Risk prediction models for depression in older adults with cancer*. **BMC Psychiatry**. 2025.
+Belvederi Murri M, Sciavicco G, Specchia M, et al. [Risk prediction models for depression in older adults with cancer](https://bmcpsychiatry.biomedcentral.com/articles/10.1186/s12888-025-07578-6). **BMC Psychiatry**. 2025.
 
-DOI/link is not currently included in repository files.
+
